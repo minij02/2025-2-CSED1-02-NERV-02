@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3, 
+  "name": "GuardFilter",
+  "version": "1.0.0",
+  "description": "A Chrome extension that performs real-time analysis and blocking of chat messages and comments delivered to creators, based on user-defined filtering options.",
+  
+   "icons": {
+  },
+  
+  "background": {
+    "service_worker": "src/background/service-worker.ts" 
+  },
+
+  "action": {
+    "default_title": "SafeGuard Settings",
+    "default_popup": "index.html" 
+  },
+
+  "permissions": [
+    "contentSettings",
+    "storage", 
+    "tabs",
+    "activeTab",
+    "sidePanel",
+    "scripting",
+    "declarativeNetRequest"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/content-script.tsx"] 
+    }
+  ]
+}
