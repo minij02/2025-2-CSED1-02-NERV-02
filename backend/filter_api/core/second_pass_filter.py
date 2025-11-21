@@ -17,7 +17,16 @@ except ImportError:
 
 class SecondPassFilter:
     def __init__(self, api_key=None):
-        self.client = openai.OpenAI()    
+        api_key = config.OPENAI_API_KEY
+        
+        if api_key:
+            # 키가 있으면 정상적으로 클라이언트 생성
+            self.client = openai.OpenAI(api_key=api_key)
+        else:
+            # 키가 없으면 클라이언트를 None으로 설정하고 경고 출력
+            self.client = None
+            print("[WARNING] OPENAI_API_KEY가 설정되지 않았습니다. 2차 필터링(AI)이 비활성화됩니다.")    
+        
         self.special_ai_modules = config.SPECIAL_AI_MODULES
         self.basic_ai_module = config.BASIC_AI_MODULE
 
@@ -59,6 +68,10 @@ class SecondPassFilter:
         """
         [API 통신 담당] 실제 GPT에게 질문을 던지고 JSON 결과를 받아옵니다.
         """
+        if self.client is None:
+            # 빈 응답을 반환하여 2차 필터링 로직이 정상적으로 통과되게 함
+            return {"detected_items": [], "reason": "API Key Missing", "severity": 0}
+
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini", # 또는 "gpt-3.5-turbo" (가성비 모델)
