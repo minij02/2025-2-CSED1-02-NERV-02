@@ -5,3 +5,6 @@ google-auth-oauthlib
 google-auth-httplib2
 python-dotenv
 korcen
+openai
+JPype1==1.4.1
+konlpy
