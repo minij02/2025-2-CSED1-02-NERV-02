@@ -1,31 +1,42 @@
 import os
 from dotenv import load_dotenv
 
-# .env 파일에서 환경 변수를 불러오기
+# .env 파일에서 환경 변수를 불러와 시스템에 등록
 load_dotenv()
 
+# ===========================================================
 # [시스템 설정]
-# 1:관찰, 2:관대, 3:일반, 4:적극, 5:최대보호
-SECURITY_LEVEL = 3           
+# ===========================================================
 
-# 2차 정밀 AI 모델 사용 여부 (False면 사용 안 함)
+# 보안 레벨 (1:관찰 ~ 5:최대보호)
+# .env에서 값을 가져오되, 없으면 기본값 3(일반) 사용
+SECURITY_LEVEL = int(os.getenv("SECURITY_LEVEL", 3))
+
+# 2차 정밀 AI 모델(별도 학습 모델) 사용 여부
 USE_DETAIL_AI_MODEL = False  
 
-# [위험도 기준 점수]
+# 위험도 기준 점수 (0.0 ~ 1.0)
 # 이 점수 이상이면 규정 위반으로 간주
 RISK_THRESHOLD = 0.65
 
-# 필터링 강도 설정
-# 1: 관찰, 2: 관대함, 3: 일반, 4: 적극, 5: 최대 보호
-# 아직 구현 X - 추후 API 요청 시 파라미터로 전달
-CURRENT_STRENGTH = int(os.getenv("CURRENT_STRENGTH", 3)) # 기본값 '3' (일반)
+# AI 모델 경로 (추후 사용)
+BASE_MODEL_PATH = "resources/models/AI_model.h5"
 
-# .env 파일에서 YouTube API 키 불러오기
+
+# ===========================================================
+# [API 키 관리]
+# ===========================================================
+
+# YouTube Data API Key
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
-# AI 모델 경로
-# 아직 구현 X - 추후 AI 모델 파일 경로를 지정
-BASE_MODEL_PATH = "resources/models/AI_model.h5"
+# OpenAI API Key (GPT 사용)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
+# ===========================================================
+# [AI 필터링 모듈 지침]
+# ===========================================================
 
 # [특수 AI 모듈]
 # 1차 필터링에서 감지된 태그(Key)에 따라 활성화될 구체적인 분석 지침(Value)
@@ -36,7 +47,7 @@ SPECIAL_AI_MODULES = {
     'AGGRESSION': '특정 대상에 대한 맹목적 비난, 살해 협박, 저주',
     'POLITICAL': '영상 맥락과 무관한 정치적 선동, 혐오 발언',
     'SPAM': '광고, 도배, 무의미한 문자열 반복',
-    'FAMILY': '가족(부모, 자녀 등)을 비하하거나 모욕하는 패륜적 발언'  # 예시로 하나 추가함
+    'FAMILY': '가족(부모, 자녀 등)을 비하하거나 모욕하는 패륜적 발언'
 }
 
 # [기본 AI 모듈]

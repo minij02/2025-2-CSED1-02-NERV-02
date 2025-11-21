@@ -6,5 +6,5 @@ google-auth-httplib2
 python-dotenv
 korcen
 openai
-JPype1==1.4.1
+JPype1==1.5.2
 konlpy
