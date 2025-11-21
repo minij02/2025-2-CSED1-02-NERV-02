@@ -4,6 +4,17 @@ from dotenv import load_dotenv
 # .env 파일에서 환경 변수를 불러오기
 load_dotenv()
 
+# [시스템 설정]
+# 1:관찰, 2:관대, 3:일반, 4:적극, 5:최대보호
+SECURITY_LEVEL = 3           
+
+# 2차 정밀 AI 모델 사용 여부 (False면 사용 안 함)
+USE_DETAIL_AI_MODEL = False  
+
+# [위험도 기준 점수]
+# 이 점수 이상이면 규정 위반으로 간주
+RISK_THRESHOLD = 0.65
+
 # 필터링 강도 설정
 # 1: 관찰, 2: 관대함, 3: 일반, 4: 적극, 5: 최대 보호
 # 아직 구현 X - 추후 API 요청 시 파라미터로 전달
@@ -15,3 +26,22 @@ YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 # AI 모델 경로
 # 아직 구현 X - 추후 AI 모델 파일 경로를 지정
 BASE_MODEL_PATH = "resources/models/AI_model.h5"
+
+# [특수 AI 모듈]
+# 1차 필터링에서 감지된 태그(Key)에 따라 활성화될 구체적인 분석 지침(Value)
+SPECIAL_AI_MODULES = {
+    'MODIFIED': '자음/모음 분리(예: ㅂㅅ), 특수문자 삽입, 야민정음 등 필터링 회피 시도',
+    'SEXUAL': '성적 수치심 유발, 음란한 묘사, 성희롱',
+    'PRIVACY': '전화번호, 주소, 실명, 계좌번호 등 개인정보 유출',
+    'AGGRESSION': '특정 대상에 대한 맹목적 비난, 살해 협박, 저주',
+    'POLITICAL': '영상 맥락과 무관한 정치적 선동, 혐오 발언',
+    'SPAM': '광고, 도배, 무의미한 문자열 반복',
+    'FAMILY': '가족(부모, 자녀 등)을 비하하거나 모욕하는 패륜적 발언'  # 예시로 하나 추가함
+}
+
+# [기본 AI 모듈]
+# 특정 태그가 없을 때 적용할 범용 분석 지침
+BASIC_AI_MODULE = [
+    '공격적이거나 모욕적인 내용이 포함되어 있는지',
+    '사회적 통념상 용인되기 어려운 혐오 표현이 있는지'
+]
