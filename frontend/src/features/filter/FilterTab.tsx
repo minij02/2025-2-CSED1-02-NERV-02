@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import { useSettings, useUpdateSettings } from '../../hooks/useYoutubeQuery';
 
 // ----------------------------------------------------------------------
 // [내부 컴포넌트] 필터 섹션 (화이트리스트/블랙리스트 공통 UI)
@@ -7,11 +8,11 @@ interface FilterSectionProps {
   title: string;
   description: string;
   tags: string[];
-  setTags: (tags: string[]) => void;
+  onUpdateTags: (newTags: string[]) => void;
   placeholder?: string;
 }
 
-const FilterSection = ({ title, description, tags, setTags, placeholder }: FilterSectionProps) => {
+const FilterSection = ({ title, description, tags, onUpdateTags, placeholder }: FilterSectionProps) => {
   const [input, setInput] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,19 +28,21 @@ const FilterSection = ({ title, description, tags, setTags, placeholder }: Filte
   const addTag = () => {
     const trimmed = input.trim().replace(/,/g, ''); // 쉼표 제거
     if (trimmed && !tags.includes(trimmed)) {
-      setTags([...tags, trimmed]);
+      const newTags = [...tags, trimmed];
+      onUpdateTags(newTags);
       setInput('');
     }
   };
 
   // 태그 삭제
   const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    const newTags = tags.filter(tag => tag !== tagToRemove);
+    onUpdateTags(newTags); 
   };
 
   // 전체 삭제
   const clearAll = () => {
-    setTags([]);
+    onUpdateTags([]);
     setInput('');
     inputRef.current?.focus();
   };
@@ -136,8 +139,30 @@ const FilterSection = ({ title, description, tags, setTags, placeholder }: Filte
 // ----------------------------------------------------------------------
 const FilterTab = () => {
   // 상태 관리
-  const [whiteList, setWhiteList] = useState<string[]>(['바보', '멍청이', '쌉가능']);
-  const [blackList, setBlackList] = useState<string[]>(['비하 별명', '경쟁 채널', '과거 논란']);
+  // 1. Chrome Storage에서 설정 불러오기
+  const { data: settings } = useSettings();
+  
+  // 2. 설정 저장(Mutation) 훅 가져오기
+  const updateSettingsMutation = useUpdateSettings();
+
+  // 데이터 로딩 중이면 아무것도 안 보여주거나 로딩 스피너
+  if (!settings) return null;
+
+  // 화이트리스트 업데이트 함수
+  const handleUpdateWhiteList = (newTags: string[]) => {
+    updateSettingsMutation.mutate({
+      ...settings,
+      whiteList: newTags // 기존 설정 유지하고 whiteList만 변경
+    });
+  };
+
+  // 블랙리스트 업데이트 함수
+  const handleUpdateBlackList = (newTags: string[]) => {
+    updateSettingsMutation.mutate({
+      ...settings,
+      blackList: newTags // 기존 설정 유지하고 blackList만 변경
+    });
+  };
 
   return (
     <div className="p-6 bg-white h-full">
@@ -145,8 +170,8 @@ const FilterTab = () => {
       <FilterSection
         title="화이트리스트"
         description="이 목록에 등록된 단어는 필터링 시스템에서 항상 안전한 단어로 인식됩니다. 욕설로 오해받을 수 있는 채널 밈, 애칭 등을 등록하여 오탐을 방지할 수 있습니다."
-        tags={whiteList}
-        setTags={setWhiteList}
+        tags={settings.whiteList || []} 
+        onUpdateTags={handleUpdateWhiteList}
         placeholder="단어 입력 후 엔터 또는 쉼표"
       />
 
@@ -154,8 +179,8 @@ const FilterTab = () => {
       <FilterSection
         title="블랙리스트"
         description="이 목록의 단어가 포함된 댓글은 필터링 강도와 관계없이 시스템이 가장 먼저, 그리고 확실하게 차단/숨김 조치를 취합니다."
-        tags={blackList}
-        setTags={setBlackList}
+        tags={settings.blackList || []}
+        onUpdateTags={handleUpdateBlackList}
         placeholder="단어 입력 후 엔터 또는 쉼표"
       />
     </div>

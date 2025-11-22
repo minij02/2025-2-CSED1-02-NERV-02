@@ -1,30 +1,80 @@
+import { useEffect, useState } from 'react';
+import { useYoutubeAnalysis, useSettings } from '../../hooks/useYoutubeQuery';
+
 const ChatTab = () => {
-  // UI 확인용 더미 데이터
-  const dummyComments = [
-    { id: 1, user: '@TheDiscfanatic', time: '1 minute ago', text: 'Was glad to see the Pixel 7 win those two awards...', avatar: 'bg-gray-400' },
-    { id: 2, user: '@ayushjangta', time: '10 seconds ago', text: 'Always found your content to be professional...', avatar: 'bg-red-500' },
-    { id: 3, user: '@BadUser', time: '2 minutes ago', text: '이 멍청이들아 ㅋㅋ 다 속고있네', avatar: 'bg-blue-400', isFiltered: true },
-  ];
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // 1. 현재 탭의 Video ID 추출
+  useEffect(() => {
+    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const urlStr = tabs[0]?.url;
+        if (urlStr) {
+          const url = new URL(urlStr);
+          const v = url.searchParams.get('v');
+          if (v) setVideoId(v);
+          else setErrorMsg("유튜브 영상 페이지가 아닙니다.");
+        }
+      });
+    } else {
+      console.log("로컬 개발 환경: Mock ID 사용");
+      setVideoId('test_video_id');
+    }
+  }, []);
+
+  // 2. TanStack Query로 데이터 가져오기
+  const { data, isLoading, isError } = useYoutubeAnalysis(videoId);
+  const { data: settings } = useSettings(); // 설정값도 가져옴 (필터링 로직용)
+
+  if (errorMsg) return <div className="p-4 text-center text-gray-500">{errorMsg}</div>;
+  if (isLoading) return <div className="p-8 text-center">분석 중입니다... 🛡️</div>;
+  if (isError || !data) return <div className="p-4 text-center text-red-500">데이터를 불러오는데 실패했습니다.</div>;
 
   return (
-    <div className="flex flex-col space-y-6 p-2">
-      {dummyComments.map((comment) => (
-        <div key={comment.id} className={`flex items-start space-x-3 ${comment.isFiltered ? 'opacity-50' : ''}`}>
-          {/* 아바타 */}
-          <div className={`w-10 h-10 rounded-full shrink-0 ${comment.avatar}`} />
-          
-          {/* 내용 */}
-          <div className="flex-1">
-            <div className="flex items-baseline space-x-2">
-              <span className="font-bold text-sm text-gray-800">{comment.user}</span>
-              <span className="text-xs text-gray-400">{comment.time}</span>
+    <div className="flex flex-col space-y-4 p-2">
+      {data.results.map((comment, index) => {
+        // 간단한 필터링 표시 로직: AUTO_HIDE 상태이거나 위험 점수가 높으면 흐리게 표시
+        const isHidden = comment.action === 'AUTO_HIDE';
+        const isUserBlacklisted = settings?.blackList.some(word => comment.original.includes(word));
+        
+        // 최종적으로 숨길지 결정 (API 결과 OR 사용자 블랙리스트)
+        const shouldBlur = isHidden || isUserBlacklisted;
+
+        return (
+          <div key={index} className={`flex items-start space-x-3 p-2 rounded-lg transition-colors ${shouldBlur ? 'bg-red-50' : 'hover:bg-gray-50'}`}>
+            {/* 아바타 */}
+            <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-white font-bold text-xs ${shouldBlur ? 'bg-red-300' : 'bg-indigo-400'}`}>
+              {comment.author.substring(1, 3).toUpperCase()}
             </div>
-            <p className="text-sm text-gray-600 mt-1 leading-relaxed">
-              {comment.isFiltered ? '🚫 필터링된 메시지입니다.' : comment.text}
-            </p>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline space-x-2">
+                <span className="font-bold text-sm text-gray-800 truncate">{comment.author}</span>
+                <span className="text-xs text-gray-400">{comment.published_at}</span>
+              </div>
+              
+              <p className={`text-sm mt-1 leading-relaxed break-words ${shouldBlur ? 'text-gray-400 italic' : 'text-gray-700'}`}>
+                {shouldBlur ? 
+                  (isUserBlacklisted ? "🚫 사용자 블랙리스트 단어가 포함되어 숨겨졌습니다." : "🛡️ 규정 위반으로 숨겨진 메시지입니다.") 
+                  : comment.processed
+                }
+              </p>
+              
+              {/* 디버깅용 태그 표시 */}
+              {comment.violation_tags.length > 0 && (
+                <div className="flex gap-1 mt-2">
+                  {comment.violation_tags.map(tag => (
+                    <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
